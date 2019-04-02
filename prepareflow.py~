@@ -1,0 +1,38 @@
+from scapy.all import *
+import dpkt
+import pandas as pd
+import socket
+import time
+import datetime
+#pcaps = rdpcap('./attack1.pcap')
+#print pcaps
+ip_src=[]
+ip_dst=[]
+src_port = []
+dst_port = []
+timestamp = []
+data = []
+def inet_to_str(inet):
+    try:
+        return socket.inet_ntop(socket.AF_INET,inet)
+    except:
+        return False
+with open('./attack1.pcap','rb') as f:
+    pcap = dpkt.pcap.Reader(f)
+    for ts,buf in pcap:
+        eth = dpkt.ethernet.Ethernet(buf)
+        if eth.type != dpkt.ethernet.ETH_TYPE_IP:
+            continue
+        ip_src.append(str(inet_to_str(eth.data.src)))
+        ip_dst.append(str(inet_to_str(eth.data.dst)))
+        try:
+            src_port.append(str(eth.data.data.sport))
+            dst_port.append(str(eth.data.data.dport))
+        except:
+            src_port.append('0')
+            dst_port.append('0')
+        d=datetime.datetime.fromtimestamp(ts)
+        timestamp.append(str(d))
+        data.append(unicode(str(eth.data.data.data),errors='ignore'))
+    dataframe = pd.DataFrame({"timestamp":timestamp,"msg":data,"ip_src":ip_src,"src_port":src_port,"ip_dst":ip_dst,"dst_port":dst_port})
+    dataframe.to_csv("test.csv",index=False,sep=',',encoding='utf-8')
